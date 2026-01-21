@@ -23,7 +23,11 @@ interface RewardSlotProps {
 
 const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => {
   const [phase, setPhase] = useState(0);
-  // Case 1 (no rewards): Phase 0 -> 1 (confetti + card) -> 2 (footer)
+  // Case 1 (no rewards): 
+  //   Phase 0 -> initial (card + footer visible)
+  //   Phase 1 -> confetti + card/footer move up
+  //   Phase 2 -> header appears
+  //   Phase 3 -> everything moves up and disappears
   // Case 2 (with rewards): Phase 0 -> 1 (banner) -> 2 (confetti + card) -> 3 (card slides up + banner transforms) -> 4 (rewards)
 
   const hasRewards = rewards.length > 0;
@@ -42,63 +46,96 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
         onComplete?.();
       }, 3000)); // Rewards appear
     } else {
-      // Case 1: Cashback only - no banner
-      timers.push(setTimeout(() => setPhase(1), 300));    // Confetti + card
+      // Case 1: Cashback only
+      timers.push(setTimeout(() => setPhase(1), 100));    // Card + footer start moving up
+      timers.push(setTimeout(() => setPhase(2), 600));    // Header appears + confetti
+      timers.push(setTimeout(() => setPhase(3), 2000));   // Everything moves up and disappears
       timers.push(setTimeout(() => {
-        setPhase(2);
         onComplete?.();
-      }, 1000)); // Footer appears
+      }, 2500));
     }
 
     return () => timers.forEach(clearTimeout);
   }, [hasRewards, onComplete]);
 
-  // CASE 1: Cashback Only (No banner, just centered card)
+  // CASE 1: Cashback Only
+  // Card + Footer visible first, move up, header appears, then all disappear
   if (!hasRewards) {
     return (
       <div className="relative w-full max-w-md mx-auto overflow-hidden py-8">
-        {/* Confetti */}
-        {phase >= 1 && <Confetti />}
+        {/* Confetti - appears with header */}
+        {phase >= 2 && phase < 3 && <Confetti />}
 
-        {/* Cashback Card - Centered */}
+        {/* Header/Banner - appears in phase 2 */}
         <AnimatePresence>
-          {phase >= 1 && cashback && (
+          {phase >= 2 && phase < 3 && cashback && (
             <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 20,
-              }}
-              className="bg-white rounded-2xl shadow-xl p-6 mx-auto relative z-10"
-              style={{ maxWidth: "240px" }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -60 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gradient-to-r from-[#E8F5E9] to-[#C8E6C9] px-4 py-3 rounded-xl mb-4 shadow-sm"
             >
-              <div className="text-center">
-                <p className="text-gray-500 text-sm mb-2">You won</p>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">🪙</span>
-                  <span className="text-3xl font-bold text-green-600">
-                    {currency}{cashback.amount}
-                  </span>
-                </div>
-                <p className="text-gray-600 font-medium">Cashback</p>
-              </div>
+              <p className="text-center text-gray-700 font-medium text-sm">
+                🎉 Yay! You won {currency}{cashback.amount} cashback!
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Footer Text */}
+        {/* Card + Footer Container - moves up together */}
         <AnimatePresence>
-          {phase >= 2 && cashback && (
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="text-center text-gray-500 text-sm mt-6"
+          {phase < 3 && cashback && (
+            <motion.div
+              initial={{ y: 0 }}
+              animate={{ 
+                y: phase >= 1 ? -40 : 0,
+              }}
+              exit={{ 
+                y: -150, 
+                opacity: 0,
+              }}
+              transition={{
+                duration: 0.4,
+                ease: "easeOut",
+              }}
+              className="relative z-10"
             >
-              Added to your Amazon Pay balance
-            </motion.p>
+              {/* Cashback Card */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 20,
+                  delay: 0.1,
+                }}
+                className="bg-white rounded-2xl shadow-xl p-6 mx-auto"
+                style={{ maxWidth: "240px" }}
+              >
+                <div className="text-center">
+                  <p className="text-gray-500 text-sm mb-2">You won</p>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-2xl">🪙</span>
+                    <span className="text-3xl font-bold text-green-600">
+                      {currency}{cashback.amount}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 font-medium">Cashback</p>
+                </div>
+              </motion.div>
+
+              {/* Footer Text */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                className="text-center text-gray-500 text-sm mt-6"
+              >
+                Added to your Amazon Pay balance
+              </motion.p>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
