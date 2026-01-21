@@ -59,58 +59,35 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
   }, [hasRewards, onComplete]);
 
   // CASE 1: Cashback Only
-  // Card + Footer visible first, move up, header appears, then all disappear
+  // Initial: Card + Footer visible (no header)
+  // Then they move up, header appears BELOW them
+  // Then everything disappears
   if (!hasRewards) {
     return (
       <div className="relative w-full max-w-md mx-auto overflow-hidden py-8">
         {/* Confetti - appears with header */}
         {phase >= 2 && phase < 3 && <Confetti />}
 
-        {/* Header/Banner - appears in phase 2 */}
-        <AnimatePresence>
-          {phase >= 2 && phase < 3 && cashback && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -60 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gradient-to-r from-[#E8F5E9] to-[#C8E6C9] px-4 py-3 rounded-xl mb-4 shadow-sm"
-            >
-              <p className="text-center text-gray-700 font-medium text-sm">
-                🎉 Yay! You won {currency}{cashback.amount} cashback!
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Card + Footer Container - moves up together */}
+        {/* Card + Footer Container - starts visible, moves up */}
         <AnimatePresence>
           {phase < 3 && cashback && (
             <motion.div
-              initial={{ y: 0 }}
+              initial={{ y: 0, opacity: 1 }}
               animate={{ 
-                y: phase >= 1 ? -40 : 0,
+                y: phase >= 1 ? -50 : 0,
               }}
               exit={{ 
                 y: -150, 
                 opacity: 0,
               }}
               transition={{
-                duration: 0.4,
+                duration: 0.5,
                 ease: "easeOut",
               }}
               className="relative z-10"
             >
               {/* Cashback Card */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 20,
-                  delay: 0.1,
-                }}
+              <div
                 className="bg-white rounded-2xl shadow-xl p-6 mx-auto"
                 style={{ maxWidth: "240px" }}
               >
@@ -124,17 +101,30 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
                   </div>
                   <p className="text-gray-600 font-medium">Cashback</p>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Footer Text */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                className="text-center text-gray-500 text-sm mt-6"
-              >
+              <p className="text-center text-gray-500 text-sm mt-6">
                 Added to your Amazon Pay balance
-              </motion.p>
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Header/Banner - appears AFTER card moves up (phase 2) */}
+        <AnimatePresence>
+          {phase >= 2 && phase < 3 && cashback && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -40 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-4 py-2 rounded-full shadow-sm mx-auto mt-4"
+              style={{ maxWidth: "280px" }}
+            >
+              <p className="text-center text-gray-700 font-medium text-sm">
+                🎉 Yay! You won {currency}{cashback.amount} cashback!
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
