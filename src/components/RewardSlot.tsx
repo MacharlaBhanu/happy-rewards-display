@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Confetti } from "./Confetti";
 
@@ -13,7 +13,6 @@ interface RewardDetails {
   title: string;
   subtitle?: string;
   buttonText: string;
-  gradientColors?: string[];
 }
 
 interface RewardSlotProps {
@@ -24,90 +23,145 @@ interface RewardSlotProps {
 
 const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => {
   const [phase, setPhase] = useState(0);
-  // Phase 0: Initial
-  // Phase 1: Banner appears
-  // Phase 2: Confetti + Cashback card
-  // Phase 3: Footer appears
-  // Phase 4: Card slides up (only if rewards exist)
-  // Phase 5: Rewards appear
+  // Case 1 (no rewards): Phase 0 -> 1 (confetti + card) -> 2 (footer)
+  // Case 2 (with rewards): Phase 0 -> 1 (banner) -> 2 (confetti + card) -> 3 (card slides up + banner transforms) -> 4 (rewards)
 
   const hasRewards = rewards.length > 0;
+  const currency = cashback?.currency || "₹";
 
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
 
-    // Phase 1: Banner slides in (100ms)
-    timers.push(setTimeout(() => setPhase(1), 100));
-
-    // Phase 2: Confetti + Cashback card (300ms)
-    timers.push(setTimeout(() => setPhase(2), 300));
-
-    // Phase 3: Footer appears (1000ms)
-    timers.push(setTimeout(() => setPhase(3), 1000));
-
     if (hasRewards) {
-      // Phase 4: Card slides up (2500ms)
-      timers.push(setTimeout(() => setPhase(4), 2500));
-
-      // Phase 5: Rewards appear (3000ms)
+      // Case 2: With rewards
+      timers.push(setTimeout(() => setPhase(1), 100));    // Banner appears
+      timers.push(setTimeout(() => setPhase(2), 500));    // Confetti + card
+      timers.push(setTimeout(() => setPhase(3), 2500));   // Card slides up, banner transforms
       timers.push(setTimeout(() => {
-        setPhase(5);
+        setPhase(4);
         onComplete?.();
-      }, 3000));
+      }, 3000)); // Rewards appear
     } else {
-      timers.push(setTimeout(() => onComplete?.(), 1500));
+      // Case 1: Cashback only - no banner
+      timers.push(setTimeout(() => setPhase(1), 300));    // Confetti + card
+      timers.push(setTimeout(() => {
+        setPhase(2);
+        onComplete?.();
+      }, 1000)); // Footer appears
     }
 
     return () => timers.forEach(clearTimeout);
   }, [hasRewards, onComplete]);
 
-  const currency = cashback?.currency || "₹";
+  // CASE 1: Cashback Only (No banner, just centered card)
+  if (!hasRewards) {
+    return (
+      <div className="relative w-full max-w-md mx-auto overflow-hidden py-8">
+        {/* Confetti */}
+        {phase >= 1 && <Confetti />}
 
+        {/* Cashback Card - Centered */}
+        <AnimatePresence>
+          {phase >= 1 && cashback && (
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+              }}
+              className="bg-white rounded-2xl shadow-xl p-6 mx-auto relative z-10"
+              style={{ maxWidth: "240px" }}
+            >
+              <div className="text-center">
+                <p className="text-gray-500 text-sm mb-2">You won</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl">🪙</span>
+                  <span className="text-3xl font-bold text-green-600">
+                    {currency}{cashback.amount}
+                  </span>
+                </div>
+                <p className="text-gray-600 font-medium">Cashback</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Footer Text */}
+        <AnimatePresence>
+          {phase >= 2 && cashback && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-center text-gray-500 text-sm mt-6"
+            >
+              Added to your Amazon Pay balance
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // CASE 2: Cashback + Rewards (With banner, card slides up)
   return (
     <div className="relative w-full max-w-md mx-auto overflow-hidden">
-      {/* Green Banner */}
+      {/* Green Banner - transforms to compact version */}
       <AnimatePresence>
         {phase >= 1 && cashback && (
           <motion.div
             initial={{ y: -60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            animate={{ 
+              y: 0, 
+              opacity: 1,
+            }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-gradient-to-r from-[#90EE90] to-[#98FB98] px-4 py-3 rounded-lg mb-4 shadow-sm"
+            className="bg-gradient-to-r from-[#E8F5E9] to-[#C8E6C9] px-4 py-3 rounded-xl mb-4 shadow-sm"
           >
-            <p className="text-center text-gray-800 font-medium text-sm">
-              🎉 Yay! You won {currency}{cashback.amount} cashback!
-            </p>
+            {phase < 3 ? (
+              // Initial banner
+              <p className="text-center text-gray-700 font-medium text-sm">
+                🎉 Yay! You won {currency}{cashback.amount} cashback!
+              </p>
+            ) : (
+              // Transformed compact version with cashback amount
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center gap-3"
+              >
+                <span className="text-gray-600 text-sm">🎉 Yay! You Won {currency}{cashback.amount} cashback!</span>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Confetti */}
-      {phase >= 2 && <Confetti />}
+      {phase >= 2 && phase < 3 && <Confetti />}
 
-      {/* Cashback Card */}
+      {/* Cashback Card - Only shows before transform */}
       <AnimatePresence>
-        {phase >= 2 && cashback && (
+        {phase >= 2 && phase < 3 && cashback && (
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}
-            animate={{
-              scale: phase >= 4 ? 0.92 : 1,
-              opacity: phase >= 4 ? 0.85 : 1,
-              y: phase >= 4 ? -80 : 0,
-            }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0, y: -50 }}
             transition={{
               type: "spring",
               stiffness: 200,
               damping: 20,
-              duration: 0.5,
             }}
             className="bg-white rounded-2xl shadow-xl p-6 mx-auto relative z-10"
-            style={{ maxWidth: "280px" }}
+            style={{ maxWidth: "240px" }}
           >
             <div className="text-center">
               <p className="text-gray-500 text-sm mb-2">You won</p>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-3xl">🪙</span>
-                <span className="text-4xl font-bold text-gray-900">
+                <span className="text-2xl">🪙</span>
+                <span className="text-3xl font-bold text-green-600">
                   {currency}{cashback.amount}
                 </span>
               </div>
@@ -117,40 +171,31 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
         )}
       </AnimatePresence>
 
-      {/* Footer Text */}
+      {/* Compact Cashback Row - Shows after transform */}
       <AnimatePresence>
         {phase >= 3 && cashback && (
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ 
-              opacity: 1, 
-              y: phase >= 4 ? -70 : 0,
-              color: phase >= 4 ? "#22c55e" : "#6b7280"
-            }}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="text-center text-sm mt-4"
+            className="flex items-center justify-center gap-2 py-2"
           >
-            {phase >= 4 
-              ? "✓ Added to your Amazon Pay balance" 
-              : "Will be added to your Amazon Pay Balance"
-            }
-          </motion.p>
+            <span className="text-xl">🪙</span>
+            <span className="text-xl font-bold text-green-600">{currency}{cashback.amount}</span>
+            <span className="text-gray-600 font-medium">Cashback</span>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Rewards Section */}
       <AnimatePresence>
-        {phase >= 5 && hasRewards && (
+        {phase >= 4 && (
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="mt-6 space-y-3"
+            className="mt-4 space-y-3"
           >
-            <p className="text-gray-600 text-sm font-medium px-2">
-              Recommended rewards for you
-            </p>
-            
             {rewards.map((reward, index) => (
               <motion.div
                 key={reward.id}
@@ -163,7 +208,6 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
                 }}
                 className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl p-4 shadow-lg overflow-hidden relative"
               >
-                {/* Badge */}
                 <div className="inline-block bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full mb-2">
                   {reward.badge}
                 </div>
@@ -182,7 +226,6 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
                   {reward.buttonText} ⊕
                 </button>
                 
-                {/* Decorative card image placeholder */}
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 w-16 h-10 bg-gradient-to-br from-white/20 to-white/5 rounded-md border border-white/20" />
               </motion.div>
             ))}
