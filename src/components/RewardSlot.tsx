@@ -48,11 +48,10 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
     } else {
       // Case 1: Cashback only
       timers.push(setTimeout(() => setPhase(1), 100));    // Card + footer start moving up
-      timers.push(setTimeout(() => setPhase(2), 600));    // Header appears + confetti
-      timers.push(setTimeout(() => setPhase(3), 2000));   // Everything moves up and disappears
+      timers.push(setTimeout(() => setPhase(2), 800));    // Card + footer exit, confetti + header appear
       timers.push(setTimeout(() => {
         onComplete?.();
-      }, 2500));
+      }, 3500));
     }
 
     return () => timers.forEach(clearTimeout);
@@ -60,28 +59,29 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
 
   // CASE 1: Cashback Only
   // Initial: Card + Footer visible (no header)
-  // Then they move up, header appears BELOW them
-  // Then everything disappears
+  // They move up together, then exit
+  // Header banner + confetti appear and stay visible
   if (!hasRewards) {
     return (
       <div className="relative w-full max-w-md mx-auto overflow-hidden py-8">
-        {/* Confetti - appears with header */}
-        {phase >= 2 && phase < 3 && <Confetti />}
+        {/* Confetti - appears when header shows */}
+        {phase >= 2 && <Confetti />}
 
-        {/* Card + Footer Container - starts visible, moves up */}
+        {/* Card + Footer Container - starts visible, moves up, then exits */}
         <AnimatePresence>
-          {phase < 3 && cashback && (
+          {phase < 2 && cashback && (
             <motion.div
               initial={{ y: 0, opacity: 1 }}
               animate={{ 
-                y: phase >= 1 ? -50 : 0,
+                y: phase >= 1 ? -60 : 0,
+                opacity: phase >= 1 ? 0.8 : 1,
               }}
               exit={{ 
-                y: -150, 
+                y: -120, 
                 opacity: 0,
               }}
               transition={{
-                duration: 0.5,
+                duration: 0.6,
                 ease: "easeOut",
               }}
               className="relative z-10"
@@ -111,19 +111,23 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
           )}
         </AnimatePresence>
 
-        {/* Header/Banner - appears AFTER card moves up (phase 2) */}
+        {/* Header/Banner - appears AFTER card exits (phase 2), stays visible */}
         <AnimatePresence>
-          {phase >= 2 && phase < 3 && cashback && (
+          {phase >= 2 && cashback && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -40 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-4 py-2 rounded-full shadow-sm mx-auto mt-4"
-              style={{ maxWidth: "280px" }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ 
+                duration: 0.4,
+                type: "spring",
+                stiffness: 300,
+                damping: 20
+              }}
+              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md mx-auto"
+              style={{ maxWidth: "300px" }}
             >
-              <p className="text-center text-gray-700 font-medium text-sm">
-                🎉 Yay! You won {currency}{cashback.amount} cashback!
+              <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
+                <span>🎉</span> Yay! You won {currency}{cashback.amount} cashback!
               </p>
             </motion.div>
           )}
