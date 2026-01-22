@@ -47,58 +47,64 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
       }, 3000)); // Rewards appear
     } else {
       // Case 1: Cashback only
-      timers.push(setTimeout(() => setPhase(1), 100));    // Card + footer start moving up
-      timers.push(setTimeout(() => setPhase(2), 800));    // Card + footer exit, confetti + header appear
+      // Phase 0: Initial (card + footer visible lower)
+      // Phase 1: Card + Footer move up + confetti starts
+      // Phase 2: Header appears, card continues moving up behind it
+      // Phase 3: Animation complete
+      timers.push(setTimeout(() => setPhase(1), 100));    // Card + footer move up, confetti
+      timers.push(setTimeout(() => setPhase(2), 700));    // Header appears, card slides behind
+      timers.push(setTimeout(() => setPhase(3), 1500));   // Animation complete
       timers.push(setTimeout(() => {
         onComplete?.();
-      }, 3500));
+      }, 2000));
     }
 
     return () => timers.forEach(clearTimeout);
   }, [hasRewards, onComplete]);
 
   // CASE 1: Cashback Only
-  // Initial: Header NOT visible, Card + Footer visible (starts lower)
-  // Animation: Card + Footer move UP together
-  // Final: Header appears at top, Card + Footer settle below
+  // Initial: Header NOT visible, Card + Footer visible
+  // Animation: Card + Footer move UP with confetti
+  // Final: Header appears fixed on top, Card + Footer slide BEHIND header and disappear
   if (!hasRewards) {
     return (
-      <div className="relative w-full max-w-md mx-auto overflow-hidden">
-        {/* Confetti - appears when header shows */}
-        {phase >= 2 && <Confetti />}
+      <div className="relative w-full max-w-md mx-auto h-[300px] overflow-hidden">
+        {/* Confetti - appears while card is moving up (phase 1) */}
+        {phase >= 1 && phase < 3 && <Confetti />}
 
-        {/* Header/Banner - appears AFTER card moves up (phase 2) */}
+        {/* Header/Banner - FIXED on top with higher z-index, appears in phase 2 */}
         <AnimatePresence>
           {phase >= 2 && cashback && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                duration: 0.4,
-                ease: "easeOut"
-              }}
-              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md mx-auto mb-4"
-              style={{ maxWidth: "300px" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-4"
             >
-              <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
-                <span>🎉</span> Yay! You won {currency}{cashback.amount} cashback!
-              </p>
+              <div 
+                className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md"
+                style={{ maxWidth: "300px" }}
+              >
+                <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
+                  <span>🎉</span> Yay! You won {currency}{cashback.amount} cashback!
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Card + Footer Container - starts lower, moves UP together */}
+        {/* Card + Footer Container - moves UP and slides BEHIND header */}
         {cashback && (
           <motion.div
-            initial={{ y: 80 }}
+            initial={{ y: 60 }}
             animate={{ 
-              y: phase >= 1 ? 0 : 80,
+              y: phase >= 1 ? (phase >= 2 ? -200 : 0) : 60,
             }}
             transition={{
-              duration: 0.6,
+              duration: phase >= 2 ? 0.5 : 0.6,
               ease: "easeOut",
             }}
-            className="relative z-10"
+            className="relative z-10 pt-8"
           >
             {/* Cashback Card */}
             <div
