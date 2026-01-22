@@ -58,72 +58,26 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
   }, [hasRewards, onComplete]);
 
   // CASE 1: Cashback Only
-  // Initial: Card + Footer visible (no header)
-  // They move up together, then exit
-  // Header banner + confetti appear and stay visible
+  // Initial: Header NOT visible, Card + Footer visible (starts lower)
+  // Animation: Card + Footer move UP together
+  // Final: Header appears at top, Card + Footer settle below
   if (!hasRewards) {
     return (
-      <div className="relative w-full max-w-md mx-auto overflow-hidden py-8">
+      <div className="relative w-full max-w-md mx-auto overflow-hidden">
         {/* Confetti - appears when header shows */}
         {phase >= 2 && <Confetti />}
 
-        {/* Card + Footer Container - starts visible, moves up, then exits */}
-        <AnimatePresence>
-          {phase < 2 && cashback && (
-            <motion.div
-              initial={{ y: 0, opacity: 1 }}
-              animate={{ 
-                y: phase >= 1 ? -60 : 0,
-                opacity: phase >= 1 ? 0.8 : 1,
-              }}
-              exit={{ 
-                y: -120, 
-                opacity: 0,
-              }}
-              transition={{
-                duration: 0.6,
-                ease: "easeOut",
-              }}
-              className="relative z-10"
-            >
-              {/* Cashback Card */}
-              <div
-                className="bg-white rounded-2xl shadow-xl p-6 mx-auto"
-                style={{ maxWidth: "240px" }}
-              >
-                <div className="text-center">
-                  <p className="text-gray-500 text-sm mb-2">You won</p>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-2xl">🪙</span>
-                    <span className="text-3xl font-bold text-green-600">
-                      {currency}{cashback.amount}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 font-medium">Cashback</p>
-                </div>
-              </div>
-
-              {/* Footer Text */}
-              <p className="text-center text-gray-500 text-sm mt-6">
-                Added to your Amazon Pay balance
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Header/Banner - appears AFTER card exits (phase 2), stays visible */}
+        {/* Header/Banner - appears AFTER card moves up (phase 2) */}
         <AnimatePresence>
           {phase >= 2 && cashback && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ 
                 duration: 0.4,
-                type: "spring",
-                stiffness: 300,
-                damping: 20
+                ease: "easeOut"
               }}
-              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md mx-auto"
+              className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md mx-auto mb-4"
               style={{ maxWidth: "300px" }}
             >
               <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
@@ -132,6 +86,43 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Card + Footer Container - starts lower, moves UP together */}
+        {cashback && (
+          <motion.div
+            initial={{ y: 80 }}
+            animate={{ 
+              y: phase >= 1 ? 0 : 80,
+            }}
+            transition={{
+              duration: 0.6,
+              ease: "easeOut",
+            }}
+            className="relative z-10"
+          >
+            {/* Cashback Card */}
+            <div
+              className="bg-white rounded-2xl shadow-xl p-6 mx-auto"
+              style={{ maxWidth: "240px" }}
+            >
+              <div className="text-center">
+                <p className="text-gray-500 text-sm mb-2">You won</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl">🪙</span>
+                  <span className="text-3xl font-bold text-green-600">
+                    {currency}{cashback.amount}
+                  </span>
+                </div>
+                <p className="text-gray-600 font-medium">Cashback</p>
+              </div>
+            </div>
+
+            {/* Footer Text */}
+            <p className="text-center text-gray-500 text-sm mt-6">
+              Added to your Amazon Pay balance
+            </p>
+          </motion.div>
+        )}
       </div>
     );
   }
