@@ -63,48 +63,59 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
   }, [hasRewards, onComplete]);
 
   // CASE 1: Cashback Only
-  // Initial: Header NOT visible, Card + Footer visible
+  // Initial: Card + Footer visible
   // Animation: Card + Footer move UP with confetti
-  // Final: Header appears fixed on top, Card + Footer slide BEHIND header and disappear
+  // Final: Separator + "Added to Amazon Pay" + yellow banner visible
   if (!hasRewards) {
     return (
-      <div className="relative w-full max-w-md mx-auto h-[300px] overflow-hidden">
+      <div className="relative w-full max-w-md mx-auto h-[280px] overflow-hidden">
         {/* Confetti - appears while card is moving up (phase 1) */}
         {phase >= 1 && phase < 3 && <Confetti />}
 
-        {/* Header/Banner - FIXED on top with higher z-index, appears in phase 2 */}
+        {/* Final State - Separator + Footer Text + Yellow Banner (appears in phase 2) */}
         <AnimatePresence>
           {phase >= 2 && cashback && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-4"
+              transition={{ duration: 0.3, delay: 0.2 }}
+              className="absolute top-0 left-0 right-0 z-20 pt-2"
             >
-              <div 
-                className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-3 rounded-full shadow-md"
-                style={{ maxWidth: "300px" }}
-              >
-                <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
-                  <span>🎉</span> Yay! You won {currency}{cashback.amount} cashback!
-                </p>
+              {/* Separator Line */}
+              <div className="w-full h-px bg-gray-200 mb-4" />
+              
+              {/* Footer Text */}
+              <p className="text-center text-gray-500 text-sm mb-3">
+                Added to your Amazon Pay balance
+              </p>
+              
+              {/* Yellow Banner */}
+              <div className="flex justify-center">
+                <div 
+                  className="bg-gradient-to-r from-[#FEF9C3] to-[#FEF08A] px-5 py-2.5 rounded-full shadow-sm"
+                  style={{ maxWidth: "280px" }}
+                >
+                  <p className="text-center text-gray-700 font-medium text-sm flex items-center justify-center gap-2">
+                    <span>🎉</span> Yay! You won {currency}{cashback.amount} cashback!
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Card + Footer Container - moves UP and slides BEHIND header */}
+        {/* Card + Footer Container - moves UP and disappears */}
         {cashback && (
           <motion.div
-            initial={{ y: 60 }}
+            initial={{ y: 40 }}
             animate={{ 
-              y: phase >= 1 ? (phase >= 2 ? -200 : 0) : 60,
+              y: phase >= 1 ? (phase >= 2 ? -250 : 0) : 40,
             }}
             transition={{
               duration: phase >= 2 ? 0.5 : 0.6,
               ease: "easeOut",
             }}
-            className="relative z-10 pt-8"
+            className="relative z-10 pt-6"
           >
             {/* Cashback Card */}
             <div
@@ -123,7 +134,7 @@ const RewardSlot = ({ cashback, rewards = [], onComplete }: RewardSlotProps) => 
               </div>
             </div>
 
-            {/* Footer Text */}
+            {/* Footer Text (moves with card) */}
             <p className="text-center text-gray-500 text-sm mt-6">
               Added to your Amazon Pay balance
             </p>
